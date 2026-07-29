@@ -8,7 +8,6 @@ import tkinter as tk
 import pyotp
 import time
 import platform
-import webbrowser
 
 
 def enable_dpi_awareness():
@@ -58,15 +57,6 @@ class TOTPApp:
         self.root.title("TOTP")
         self.root.configure(bg=self.BG)
         self.root.resizable(False, False)
-
-        # ====== 新增菜单栏 ======
-        menu_bar = tk.Menu(self.root)
-        about_menu = tk.Menu(menu_bar, tearoff=0)
-        about_menu.add_command(label="关于作者 蔡Tony", command=self._show_about_window)
-        menu_bar.add_cascade(label="关于", menu=about_menu)
-        self.root.config(menu=menu_bar)
-        # =========================
-
         if platform.system() == "Darwin":
             try: self.root.tk.call("tk", "scaling", 2.0)
             except Exception: pass
@@ -74,49 +64,6 @@ class TOTPApp:
         self.root.update_idletasks()
         sx, sy = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
         self.root.geometry(f"{self.W}x{self.H}+{(sx-self.W)//2}+{(sy-self.H)//2}")
-
-    def _show_about_window(self):
-        # 创建独立的关于弹窗
-        about_win = tk.Toplevel(self.root)
-        about_win.title("关于作者")
-        about_win.geometry("320x210")
-        about_win.configure(bg=self.BG)
-        about_win.resizable(False, False)
-        
-        # 让弹窗相对主窗口居中
-        about_win.update_idletasks()
-        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - (320 // 2)
-        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - (210 // 2)
-        about_win.geometry(f"+{x}+{y}")
-        
-        outer = tk.Frame(about_win, bg=self.BG)
-        outer.pack(fill="both", expand=True, padx=24, pady=24)
-        
-        # 模仿主界面的卡片设计
-        card = tk.Frame(outer, bg=self.CARD, highlightbackground=self.BORDER, highlightthickness=1)
-        card.pack(fill="both", expand=True)
-        
-        inner = tk.Frame(card, bg=self.CARD)
-        inner.pack(fill="both", expand=True, padx=16, pady=20)
-        
-        # 开发者信息 (采用应用统一的字体系统)
-        tk.Label(inner, text="蔡Tony", font=sys_font(14, bold=True), bg=self.CARD, fg=self.ACCENT).pack(pady=(0, 4))
-        tk.Label(inner, text="走在成长的路上，不断探索", font=sys_font(10), bg=self.CARD, fg=self.MUTED).pack(pady=(0, 20))
-        
-        # 可点击的超链接区域
-        link_frame = tk.Frame(inner, bg=self.CARD)
-        link_frame.pack()
-        
-        tk.Label(link_frame, text="网站主页: ", font=sys_font(10), bg=self.CARD, fg=self.ACCENT).pack(side="left")
-        
-        link_lbl = tk.Label(link_frame, text="蔡Tony的空间", font=sys_font(10, bold=True), fg="#2962FF", bg=self.CARD, cursor="hand2")
-        link_lbl.pack(side="left")
-        
-        # 增加悬停反馈
-        link_lbl.bind("<Enter>", lambda e: link_lbl.config(fg="#0039CB"))
-        link_lbl.bind("<Leave>", lambda e: link_lbl.config(fg="#2962FF"))
-        # 绑定左键点击事件打开网页
-        link_lbl.bind("<Button-1>", lambda e: webbrowser.open_new("https://caitony.dpdns.org/"))
 
     def _build_ui(self):
         P = 28  # 水平 padding
