@@ -1,10 +1,13 @@
-# TOTP Online
+<div align="center">
+  <img src="./totp-online.svg" alt="TOTP Online Logo" width="100" />
+  <h1>TOTP Online</h1>
+  <p>你的轻量、便捷的 TOTP 验证码生成助手</p>
 
-你的轻量、便捷的 TOTP 验证码生成助手
+  [![Python](https://img.shields.io/badge/Python-3.x-blue.svg?style=flat&logo=python)](#)
+  [![Tkinter](https://img.shields.io/badge/GUI-Tkinter-9cf.svg?style=flat)](#)
+  [![HTML](https://img.shields.io/badge/Web-HTML5-orange.svg?style=flat&logo=html5)](#)
 
-[![Python](https://img.shields.io/badge/Python-3.x-blue.svg?style=flat&logo=python)](#) [![Tkinter](https://img.shields.io/badge/GUI-Tkinter-9cf.svg?style=flat)](#) [![HTML](https://img.shields.io/badge/Web-HTML5-orange.svg?style=flat&logo=html5)](#)
-
-## 项目简介
+</div>
 
 **TOTP Online** 是一款基于 Python & html 构建的 TOTP (Time-based One-Time Password) 动态验证码生成工具。
 
