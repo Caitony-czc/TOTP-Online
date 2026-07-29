@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOTP</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:     #F6F6F4;
+  --card:   #FFFFFF;
+  --accent: #111111;
+  --muted:  #AAAAAA;
+  --border: #E4E4E0;
+  --danger: #C94B1F;
+  --green:  #2A7A46;
+}
+
+body {
+  background: var(--bg);
+  font-family: -apple-system, "Segoe UI", sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { width: 100%; max-width: 440px; }
+
+h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 22px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.input-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 14px;
+  transition: border-color .15s;
+}
+.input-wrap:focus-within { border-color: var(--accent); }
+
+input {
+  width: 100%;
+  font-family: "SF Mono", "Consolas", monospace;
+  font-size: 14px;
+  padding: 11px 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: var(--accent);
+  letter-spacing: .04em;
+}
+input::placeholder { color: var(--muted); }
+
+.error {
+  font-size: 12px;
+  color: var(--danger);
+  min-height: 20px;
+  margin-top: 6px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+#code {
+  font-family: "SF Mono", "Consolas", monospace;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--muted);
+  line-height: 1;
+  transition: color .2s;
+  user-select: all;
+}
+#code.active { color: var(--accent); }
+
+.copy-btn {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--accent);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .12s;
+  flex-shrink: 0;
+}
+.copy-btn:hover  { background: #EAEAE6; }
+.copy-btn.copied { color: var(--green); border-color: #B3DAC0; background: #F0FAF4; }
+
+/* 进度条 */
+.bar-bg {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width .8s linear, background .3s;
+}
+.bar-fill.danger { background: var(--danger); }
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#countdown {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  transition: color .3s;
+}
+#countdown.danger { color: var(--danger); }
+
+.next {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.next span {
+  font-family: "SF Mono", "Consolas", monospace;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .08em;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>TOTP 验证码生成器</h1>
+
+  <div class="label">密钥</div>
+  <div class="input-wrap">
+    <input id="secretInput" type="text" spellcheck="false"
+           autocomplete="off" placeholder="ABCD EFGH IJKL MNOP" />
+  </div>
+  <div class="error" id="err"></div>
+
+  <div class="card">
+    <div class="code-row">
+      <div id="code">———  ———</div>
+      <button class="copy-btn" id="copyBtn" onclick="copyCode()">复制</button>
+    </div>
+    <div class="bar-bg"><div class="bar-fill" id="bar"></div></div>
+    <div class="foot">
+      <div id="countdown"></div>
+      <div class="next">下一个 <span id="next">——————</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+function b32decode(s) {
+  s = s.toUpperCase().replace(/\s+/g, '').replace(/=+$/, '');
+  let bits = 0, val = 0;
+  const out = new Uint8Array(Math.floor(s.length * 5 / 8));
+  let i = 0;
+  for (const c of s) {
+    const v = B32.indexOf(c);
+    if (v < 0) throw new Error(`非法字符 "${c}"`);
+    val = (val << 5) | v; bits += 5;
+    if (bits >= 8) { out[i++] = (val >>> (bits - 8)) & 0xFF; bits -= 8; }
+  }
+  return out;
+}
+
+async function genTOTP(secret, offset = 0) {
+  const key  = b32decode(secret);
+  const step = BigInt(Math.floor(Date.now() / 1000 / 30) + offset);
+  const buf  = new ArrayBuffer(8);
+  const dv   = new DataView(buf);
+  dv.setUint32(0, Number(step >> 32n), false);
+  dv.setUint32(4, Number(step & 0xFFFFFFFFn), false);
+  const k    = await crypto.subtle.importKey('raw', key, {name:'HMAC',hash:'SHA-1'}, false, ['sign']);
+  const hash = new Uint8Array(await crypto.subtle.sign('HMAC', k, buf));
+  const off  = hash[19] & 0xF;
+  const code = ((hash[off]&0x7F)<<24 | hash[off+1]<<16 | hash[off+2]<<8 | hash[off+3]) % 1_000_000;
+  return String(code).padStart(6, '0');
+}
+
+const fmt = c => c.slice(0,3) + '  ' + c.slice(3);
+
+let lastStep = -1;
+
+async function tick() {
+  const now       = Math.floor(Date.now() / 1000);
+  const step      = Math.floor(now / 30);
+  const remaining = 30 - now % 30;
+  const pct       = remaining / 30;
+  const danger    = remaining <= 7;
+  const secret    = document.getElementById('secretInput').value.trim();
+
+  const bar = document.getElementById('bar');
+  bar.style.width = (pct * 100).toFixed(2) + '%';
+  bar.className   = 'bar-fill' + (danger ? ' danger' : '');
+
+  const cd = document.getElementById('countdown');
+
+  if (!secret) {
+    document.getElementById('code').textContent = '———  ———';
+    document.getElementById('code').className   = '';
+    document.getElementById('next').textContent = '——————';
+    cd.textContent = ''; cd.className = '';
+    document.getElementById('err').textContent = '';
+    lastStep = -1; return;
+  }
+
+  if (step !== lastStep) {
+    try {
+      const [cur, nxt] = await Promise.all([genTOTP(secret, 0), genTOTP(secret, 1)]);
+      document.getElementById('err').textContent = '';
+      document.getElementById('code').textContent = fmt(cur);
+      document.getElementById('code').className   = 'active';
+      document.getElementById('next').textContent = fmt(nxt);
+      lastStep = step;
+    } catch(e) {
+      document.getElementById('err').textContent  = '⚠ ' + e.message;
+      document.getElementById('code').textContent = '———  ———';
+      document.getElementById('code').className   = '';
+      document.getElementById('next').textContent = '——————';
+      cd.textContent = ''; lastStep = -1; return;
+    }
+  }
+
+  cd.textContent = (danger ? '⚠  ' : '') + remaining + 's';
+  cd.className   = danger ? 'danger' : '';
+}
+
+async function copyCode() {
+  const t = document.getElementById('code').textContent.replace(/\s/g,'');
+  if (!t || t.includes('—')) return;
+  const btn = document.getElementById('copyBtn');
+  try {
+    await navigator.clipboard.writeText(t);
+    btn.textContent = '✓ 已复制'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1800);
+  } catch { btn.textContent = '失败'; setTimeout(() => btn.textContent = '复制', 1200); }
+}
+
+document.getElementById('secretInput').addEventListener('input', () => { lastStep = -1; });
+
+(async function loop() { await tick(); setTimeout(loop, 300); })();
+</script>
+</body>
+</html>
