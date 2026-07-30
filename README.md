@@ -30,30 +30,30 @@ TOTP验证码生成工具，为用户准备了可以多端访问的网页，用�
 方式一：下载 Windows 桌面端
 
 1. 访问本仓库的 [Releases](../../releases) 页面。
-2. 下载最新的 `TOTP Offline vX.X.X.exe`或`TOTP Offline vX.X.X.html` 。
+2. 下载最新的 `TOTP Offline X.X.X.exe`或`TOTP Offline X.X.X.html` 。
 3. 下载后即可运行
 
 ### 方式二：免安装体验网页版
 
 打开浏览器，直接访问在线预览：
 
-[TOTP Online体验地址](https://totp-online.pages.dev/)
+[TOTP Online 体验地址](https://totp-online.pages.dev/)
 
 ### 方式三：本地开发与构建
 
 确保您的电脑已安装 Python 3 环境。
 
-1. 安装必要的依赖包：
-   
-   ```bash
-   pip install pyotp
-   ```
+```bash
+# 1. 克隆仓库
+git clone https://github.com/Caitony-czc/TOTP-Online.git
+cd "TOTP Online"
 
-2. 运行程序：
-   
-   ```bash
-   python totp_gui.py
-   ```
+# 2. 安装必要的依赖包
+pip install pywebview
+
+# 3. 启动应用
+python totp_gui.py
+```
 
 ---
 
